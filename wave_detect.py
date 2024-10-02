@@ -30,11 +30,15 @@ POSE_PAIRS = [ ["Neck", "RShoulder"], ["Neck", "LShoulder"], ["RShoulder", "RElb
 inWidth = args.width
 inHeight = args.height
 dir = os.path.dirname(__file__)
-pb_file = os.path.join(dir, "human-pose-estimation-opencv\graph_opt.pb")
+pb_file = os.path.join(dir, "human-pose-estimation-opencv", "graph_opt.pb")
 
 net = cv.dnn.readNetFromTensorflow(pb_file)
 
 cap = cv.VideoCapture(index=0)
+
+wave_threshold = 50  # Adjust based on testing
+frame_history = 10
+wrist_positions = []
 
 while cv.waitKey(1) < 0:
     hasFrame, frame = cap.read()
@@ -83,6 +87,15 @@ while cv.waitKey(1) < 0:
             
             cv.putText(frame, f'{pair[0]}', points[idFrom], cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
             cv.putText(frame, f'{pair[1]}', points[idTo], cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
+            
+            if points[idFrom] == "LWrist":
+                cv.putText(frame, "LWrist detected!", (10, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                print("LWrist detected!")
+                
+            if points[idFrom] == "RWrist":
+                cv.putText(frame, "RWrist detected!", (20, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                print("RWrist detected!")
+    
 
     t, _ = net.getPerfProfile()
     freq = cv.getTickFrequency() / 1000
