@@ -1,0 +1,3 @@
+[submodule "human-pose-estimation-opencv"]
+	path = human-pose-estimation-opencv
+	url = https://github.com/quanhua92/human-pose-estimation-opencv.git
