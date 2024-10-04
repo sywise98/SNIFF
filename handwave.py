@@ -17,6 +17,8 @@ region_top = 0
 region_bottom = int(2 * FRAME_HEIGHT / 3)
 region_left = int(FRAME_WIDTH / 2)
 region_right = FRAME_WIDTH
+#region_bottom = FRAME_HEIGHT
+#region_left = 0
 class HandData:
     top = (0,0)
     bottom = (0,0)
@@ -27,6 +29,9 @@ class HandData:
     isInFrame = False
     isWaving = False
     fingers = None
+    wave_count = 0
+    wave_list = [0.0]
+
     
     def __init__(self, top, bottom, left, right, centerX):
         self.top = top
@@ -48,10 +53,22 @@ class HandData:
         self.prevCenterX = self.centerX
         self.centerX = centerX
         
-        if abs(self.centerX - self.prevCenterX > 3):
+        if abs(self.centerX - self.prevCenterX > 10):
             self.isWaving = True
+            self.wave_count += 1
+            self.wave_list = np.append(self.wave_list,1.0)
         else:
             self.isWaving = False
+            self.wave_list = np.append(self.wave_list,1.0)
+        if self.wave_count >= 30:
+            if(np.mean(self.wave_list) > .5):
+                print("NAV TO POI") #will replace with navigation procedure
+                self.wave_count = 0
+                self.wave_list = [0]
+            else:
+                self.wave_count = 0
+                self.wave_list = [0]
+                
 # Here we take the current frame, the number of frames elapsed, and how many fingers we've detected
 # so we can print on the screen which gesture is happening (or if the camera is calibrating).
 def write_on_image(frame, frames_elapsed):
@@ -149,7 +166,7 @@ def main():
         ret, frame = capture.read()
         frame = cv2.resize(frame, (FRAME_WIDTH, FRAME_HEIGHT))
         # Flip the frame over the vertical axis so that it works like a mirror, which is more intuitive to the user.
-        frame = cv2.flip(frame, 1)
+        frame = cv2.flip(frame, 1) 
         # Separate the region of interest and prep it for edge detection.
         region = get_region(frame)
         if frames_elapsed < CALIBRATION_TIME:
@@ -178,6 +195,6 @@ def main():
 
     # When we exit the loop, we have to stop the capture too.
     capture.release()
-    cv2.destroyAllWindows()       
+    cv2.destroyAllWindows()
 if __name__=="__main__":
     main()   
