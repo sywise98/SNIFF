@@ -1,5 +1,10 @@
 import numpy as np
 import cv2
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import Bool
+from cv_bridge import CvBridge
 
 # Hold the background frame for background subtraction.
 background = None
@@ -19,6 +24,7 @@ region_left = int(FRAME_WIDTH / 2)
 region_right = FRAME_WIDTH
 #region_bottom = FRAME_HEIGHT
 #region_left = 0
+
 class HandData:
     top = (0,0)
     bottom = (0,0)
@@ -73,9 +79,9 @@ class HandData:
 # so we can print on the screen which gesture is happening (or if the camera is calibrating).
 def write_on_image(frame, frames_elapsed):
     text = "Searching..."
-    if frames_elapsed < CALIBRATION_TIME:
-        text = "Calibrating..."
-    elif hand == None or hand.isInFrame == False:
+    #if frames_elapsed < CALIBRATION_TIME:
+        #text = "Calibrating..."
+    if hand == None or hand.isInFrame == False:
         text = "No hand detected"
     else:
         if hand.isWaving:
@@ -86,7 +92,7 @@ def write_on_image(frame, frames_elapsed):
             text = "Pointing"
         elif hand.fingers == 2:
             text = "Scissors"
-    
+    print(text)
     cv2.putText(frame, text, (10,20), cv2.FONT_HERSHEY_COMPLEX, 0.4,( 0 , 0 , 0 ),2,cv2.LINE_AA)
     cv2.putText(frame, text, (10,20), cv2.FONT_HERSHEY_COMPLEX, 0.4,(255,255,255),1,cv2.LINE_AA)
 
@@ -157,44 +163,69 @@ def get_hand_data(thresholded_image, segmented_image, frames_elapsed):
     # Only check for waving every 6 frames.
     if frames_elapsed % 6 == 0:
         hand.check_for_waving(centerX)
-def main():
+def main(frame):
 
     frames_elapsed = 0
-    capture = cv2.VideoCapture(0)
-    while (True):
-        # Store the frame from the video capture and resize it to the window size.
-        ret, frame = capture.read()
-        frame = cv2.resize(frame, (FRAME_WIDTH, FRAME_HEIGHT))
-        # Flip the frame over the vertical axis so that it works like a mirror, which is more intuitive to the user.
-        frame = cv2.flip(frame, 1) 
-        # Separate the region of interest and prep it for edge detection.
-        region = get_region(frame)
-        if frames_elapsed < CALIBRATION_TIME:
-            get_average(region)
-        else:
-            region_pair = segment(region)
-            if region_pair is not None:
-                # If we have the regions segmented successfully, show them in another window for the user.
-                (thresholded_region, segmented_region) = region_pair
-                cv2.drawContours(region, [segmented_region], -1, (255, 255, 255))
-                #cv2.imshow("Segmented Image", region)
-                
-                get_hand_data(thresholded_region, segmented_region, frames_elapsed)
+
         
-        # Write the action the hand is doing on the screen, and draw the region of interest.
-        write_on_image(frame, frames_elapsed)
-        # Show the previously captured frame.
-        #cv2.imshow("Camera Input", frame)
-        frames_elapsed += 1
-        # Check if user wants to exit.
-        if (cv2.waitKey(1) & 0xFF == ord('x')):
-            break
-            
-        if (cv2.waitKey(1) & 0xFF == ord('r')):
-            frames_elapsed = 0
+    frame = cv2.resize(frame, (FRAME_WIDTH, FRAME_HEIGHT))
+    # Flip the frame over the vertical axis so that it works like a mirror, which is more intuitive to the user.
+    frame = cv2.flip(frame, 1) 
+    # Separate the region of interest and prep it for edge detection.
+    region = get_region(frame)
+    
+    get_average(region)
+    
+    region_pair = segment(region)
+    if region_pair is not None:
+        # If we have the regions segmented successfully, show them in another window for the user.
+        (thresholded_region, segmented_region) = region_pair
+        cv2.drawContours(region, [segmented_region], -1, (255, 255, 255))
+        #cv2.imshow("Segmented Image", region)
+        
+        get_hand_data(thresholded_region, segmented_region, frames_elapsed)
+
+    # Write the action the hand is doing on the screen, and draw the region of interest.
+    write_on_image(frame, frames_elapsed)
+    # Show the previously captured frame.
+    #cv2.imshow("Camera Input", frame)
+    frames_elapsed += 1
+    
+        
+    #if (cv2.waitKey(1) & 0xFF == ord('r')):
+        #frames_elapsed = 0
 
     # When we exit the loop, we have to stop the capture too.
-    capture.release()
-    cv2.destroyAllWindows()
+    #cv2.destroyAllWindows()
+
+class RosImageSub(Node):
+    def __init__(self):
+        super().__init__("hand_wave")
+        qos_profile = rclpy.qos.QoSProfile(
+             reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+             history=rclpy.qos.HistoryPolicy.KEEP_LAST,
+             depth=1
+         )
+        self.image_sub = self.create_subscription(CompressedImage, "/stereo/left/image_raw/compressed", self.image_callback, qos_profile)
+        self.waving_pub = self.create_publisher(Bool, "/is_waving", 10)
+        self.cv_bridge = CvBridge()
+    
+    def image_callback(self, msg):
+        try:
+            cv_image = self.cv_bridge.compressed_imgmsg_to_cv2(msg)
+            main(cv_image)
+
+        except Exception as e:
+            self.get_logger().error("Error Processing image: {}".format(str(e))) 
+
+
+def ros_main():
+    rclpy.init()
+    ros_sub = RosImageSub()
+    rclpy.spin(ros_sub)
+    ros_sub.destroy_node()
+    rclpy.shutdown()
+
 if __name__=="__main__":
-    main()   
+    ros_main()   
