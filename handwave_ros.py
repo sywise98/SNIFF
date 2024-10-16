@@ -25,7 +25,7 @@ region_right = FRAME_WIDTH
 #region_bottom = FRAME_HEIGHT
 #region_left = 0
 
-class HandData:
+class HandData(Node):
     top = (0,0)
     bottom = (0,0)
     left = (0,0)
@@ -40,6 +40,7 @@ class HandData:
 
     
     def __init__(self, top, bottom, left, right, centerX):
+        super().__init__("wave")
         self.top = top
         self.bottom = bottom
         self.left = left
@@ -48,6 +49,7 @@ class HandData:
         self.prevCenterX = 0
         isInFrame = False
         isWaving = False
+        self.waving_pub = self.create_publisher(Bool, "/is_waving", 10)
         
     def update(self, top, bottom, left, right):
         self.top = top
@@ -69,11 +71,16 @@ class HandData:
         if self.wave_count >= 10:
             if(np.mean(self.wave_list) > .25):
                 print("NAV TO POI") #will replace with navigation procedure
+                self.waving_pub.publish(True)
                 self.wave_count = 0
                 self.wave_list = [0]
             else:
                 self.wave_count = 0
                 self.wave_list = [0]
+                self.waving_pub.publish(False)
+        else:
+            self.waving_pub.publish(False)
+
                 
 # Here we take the current frame, the number of frames elapsed, and how many fingers we've detected
 # so we can print on the screen which gesture is happening (or if the camera is calibrating).
@@ -208,7 +215,6 @@ class RosImageSub(Node):
              depth=1
          )
         self.image_sub = self.create_subscription(CompressedImage, "/stereo/left/image_raw/compressed", self.image_callback, qos_profile)
-        self.waving_pub = self.create_publisher(Bool, "/is_waving", 10)
         self.cv_bridge = CvBridge()
     
     def image_callback(self, msg):
@@ -218,7 +224,6 @@ class RosImageSub(Node):
 
         except Exception as e:
             self.get_logger().error("Error Processing image: {}".format(str(e))) 
-
 
 def ros_main():
     rclpy.init()
