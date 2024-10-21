@@ -16,48 +16,46 @@ class ItemExtractorNode(Node):
         self.publisher = self.create_publisher(String, 'extracted_item', 10)
         
         self.model = LlamaForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf")
-        self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+        self.tokenizer = LlamaTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
 
 
     def user_input_callback(self, msg):
         user_message = msg.data
-        extracted_item = self.extract_item(user_message)
+        identified_item = self.identify_item(user_message)
+        print(f"The item the user is looking for is: {identified_item}")
         
-        output_msg = String()
-        output_msg.data = extracted_item
-        self.publisher.publish(output_msg)
-        self.get_logger().info(f'Extracted item: {extracted_item}')
+        item_msg = String()
+        item_msg.data = identified_item
+        self.publisher.publish(item_msg)
+
 
     def create_prompt(user_query):
         return f"Identify the item the user is asking to find in the following query: '{user_query}'"
 
-    def generate_response(prompt):
-        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    def generate_response(self, prompt):
+        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
         with torch.no_grad():
-            outputs = model.generate(
+            outputs = self.model.generate(
                 **inputs,
                 max_new_tokens=50,
                 temperature=0.7,
                 top_p=0.95,
                 do_sample=True
             )
-        return tokenizer.decode(outputs[0], skip_special_tokens=True)
+        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-    def extract_item(response):
+    def extract_item(self, response):
         # This is a simple extraction method. You might need to adjust it based on the model's output format.
+        print(f"response: {response}")
         return response.split(":")[-1].strip()
 
-    def identify_item(user_query):
-        prompt = create_prompt(user_query)
-        response = generate_response(prompt)
-        item = extract_item(response)
+    def identify_item(self, user_query):
+        prompt = self.create_prompt(user_query)
+        response = self.generate_response(prompt)
+        item = self.extract_item(response)
         return item
 
-    # Example usage
-    user_query = "Where can I find a red umbrella?"
-    identified_item = identify_item(user_query)
-    print(f"The item the user is looking for is: {identified_item}")
-
+    
 
 def main(args=None):
     rclpy.init(args=args)
