@@ -1,32 +1,23 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-from llama_ros.langchain import LlamaROS
-from langchain.prompts import PromptTemplate
-from langchain_core.output_parsers import StrOutputParser
+import torch
+from transformers import LlamaTokenizer, LlamaForCausalLM
 
 class ItemExtractorNode(Node):
     def __init__(self):
         super().__init__('item_extractor_node')
         self.subscription = self.create_subscription(
             String,
-            'user_input',
+            '/speech_text',
             self.user_input_callback,
             10
         )
         self.publisher = self.create_publisher(String, 'extracted_item', 10)
         
-        # Initialize Llama 3 model
-        self.llm = LlamaROS()
-        
-        # Create prompt template
-        self.prompt_template = PromptTemplate(
-            input_variables=["message"],
-            template="Extract the item that needs to be found from this message: {message}\nItem:"
-        )
-        
-        # Create chain
-        self.chain = self.prompt_template | self.llm | StrOutputParser()
+        self.model = LlamaForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf")
+        self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+
 
     def user_input_callback(self, msg):
         user_message = msg.data
@@ -37,8 +28,36 @@ class ItemExtractorNode(Node):
         self.publisher.publish(output_msg)
         self.get_logger().info(f'Extracted item: {extracted_item}')
 
-    def extract_item(self, message):
-        return self.chain.invoke({"message": message})
+    def create_prompt(user_query):
+        return f"Identify the item the user is asking to find in the following query: '{user_query}'"
+
+    def generate_response(prompt):
+        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=50,
+                temperature=0.7,
+                top_p=0.95,
+                do_sample=True
+            )
+        return tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+    def extract_item(response):
+        # This is a simple extraction method. You might need to adjust it based on the model's output format.
+        return response.split(":")[-1].strip()
+
+    def identify_item(user_query):
+        prompt = create_prompt(user_query)
+        response = generate_response(prompt)
+        item = extract_item(response)
+        return item
+
+    # Example usage
+    user_query = "Where can I find a red umbrella?"
+    identified_item = identify_item(user_query)
+    print(f"The item the user is looking for is: {identified_item}")
+
 
 def main(args=None):
     rclpy.init(args=args)
