@@ -2,9 +2,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 import torch
-from transformers import pipeline
-from transformers import AutoTokenizer, AutoModelForCausalLM
-#source .env/bin/activate
+from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 
 class ItemExtractorNode(Node):
     def __init__(self):
@@ -16,22 +14,18 @@ class ItemExtractorNode(Node):
             10
         )
         self.publisher = self.create_publisher(String, 'extracted_item', 10)
-        
         self.model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.2-1B")
         self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-1B")
-
 
     def user_input_callback(self, msg):
         user_message = msg.data
         identified_item = self.identify_item(user_message)
         print(f"The item the user is looking for is: {identified_item}")
-        
         item_msg = String()
         item_msg.data = identified_item
         self.publisher.publish(item_msg)
 
-
-    def create_prompt(user_query):
+    def create_prompt(self, user_query):  # Add 'self' as the first parameter
         return f"Identify the item the user is asking to find in the following query: '{user_query}'"
 
     def generate_response(self, prompt):
@@ -47,7 +41,6 @@ class ItemExtractorNode(Node):
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
     def extract_item(self, response):
-        # This is a simple extraction method. You might need to adjust it based on the model's output format.
         print(f"response: {response}")
         return response.split(":")[-1].strip()
 
@@ -56,8 +49,6 @@ class ItemExtractorNode(Node):
         response = self.generate_response(prompt)
         item = self.extract_item(response)
         return item
-
-    
 
 def main(args=None):
     rclpy.init(args=args)
