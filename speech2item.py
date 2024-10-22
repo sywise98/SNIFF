@@ -2,7 +2,9 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 import torch
-from transformers import LlamaTokenizer, LlamaForCausalLM
+from transformers import pipeline
+from transformers import AutoTokenizer, AutoModelForCausalLM
+#source .env/bin/activate
 
 class ItemExtractorNode(Node):
     def __init__(self):
@@ -15,8 +17,8 @@ class ItemExtractorNode(Node):
         )
         self.publisher = self.create_publisher(String, 'extracted_item', 10)
         
-        self.model = LlamaForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf")
-        self.tokenizer = LlamaTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+        self.model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.2-1B")
+        self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-1B")
 
 
     def user_input_callback(self, msg):
