@@ -50,7 +50,7 @@ class ItemExtractorNode(Node):
         print(f"first answer\n {first_answer}")
         
         #Get item
-        removals = ["\n", "the "]
+        removals = ["\n", "the ","a "]
         for removal in removals:
             first_answer = first_answer.replace(removal, "")
         

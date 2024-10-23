@@ -37,7 +37,7 @@ class ItemExtractorNode():
         print(f"first answer\n {first_answer}")
         
         #Get item
-        removals = ["\n", "the"]
+        removals = ["\n", "the", "a "]
         for removal in removals:
             first_answer = first_answer.replace(removal, "")
         
@@ -54,7 +54,7 @@ class ItemExtractorNode():
 
 def main(args=None):
     node = ItemExtractorNode()
-    node.user_input_callback("i'm trying to find a red cup")
+    node.user_input_callback("i'm trying to find a blue water bottle")
 
 if __name__ == '__main__':
     main()
