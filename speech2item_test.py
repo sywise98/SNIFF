@@ -13,7 +13,7 @@ class ItemExtractorNode():
         print(f"The item the user is looking for is: {identified_item}")
         
     def create_prompt(self, user_query):  
-        return f"What is the item trying to be found in the following sentence: '{user_query}' \nAnswer:"
+        return f"What is the name and description of the item trying to be found in the following sentence: '{user_query}' \n your answer should be formated this way (description of item) (item) Answer: "
 
     def generate_response(self, prompt):
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
@@ -21,9 +21,7 @@ class ItemExtractorNode():
             outputs = self.model.generate(
                 **inputs,
                 max_new_tokens=50,
-                temperature=0.7,
-                top_p=0.95,
-                do_sample=True
+                num_return_sequences=1
             )
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
@@ -54,7 +52,7 @@ class ItemExtractorNode():
 
 def main(args=None):
     node = ItemExtractorNode()
-    node.user_input_callback("i'm trying to find a blue water bottle")
+    node.user_input_callback("i'm trying to find a blue book")
 
 if __name__ == '__main__':
     main()
