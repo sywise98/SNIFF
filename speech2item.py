@@ -25,8 +25,8 @@ class ItemExtractorNode(Node):
         item_msg.data = identified_item
         self.publisher.publish(item_msg)
 
-    def create_prompt(self, user_query):  # Add 'self' as the first parameter
-        return f"Identify the item the user is asking to find in the following query: '{user_query}'"
+    def create_prompt(self, user_query):  
+        return f"What is the item trying to be found in the following sentence: '{user_query}' \nAnswer:"
 
     def generate_response(self, prompt):
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
@@ -41,8 +41,23 @@ class ItemExtractorNode(Node):
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
     def extract_item(self, response):
-        print(f"response: {response}")
-        return response.split(":")[-1].strip()
+        print("*********")
+        print(f"response \n {response}")
+        
+        #Get first answer
+        first_answer = (response.split("\n")[1]).split("Answer: ")[-1]
+        print("*********")
+        print(f"first answer\n {first_answer}")
+        
+        #Get item
+        removals = ["\n", "the "]
+        for removal in removals:
+            first_answer = first_answer.replace(removal, "")
+        
+        item = first_answer
+        
+        print("*********")
+        return item
 
     def identify_item(self, user_query):
         prompt = self.create_prompt(user_query)
