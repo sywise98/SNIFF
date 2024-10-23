@@ -7,12 +7,12 @@ class ItemExtractorNode():
         self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-1B")
 
     def user_input_callback(self, msg):
-        user_message = msg.data
+        user_message = msg
         identified_item = self.identify_item(user_message)
-        print(f"The item the user is looking for is: {identified_item}")
+        # print(f"The item the user is looking for is: {identified_item}")
         
     def create_prompt(self, user_query):  # Add 'self' as the first parameter
-        return f"Identify the item the user is asking to find in the following query: '{user_query}'"
+        return f"Extract the item and provide its description from this sentence: '{user_query}'"
 
     def generate_response(self, prompt):
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
@@ -27,8 +27,18 @@ class ItemExtractorNode():
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
     def extract_item(self, response):
-        print(f"response: {response}")
-        return response.split(":")[-1].strip()
+        print("*********")
+        print(f"response \n {response}")
+        
+        # #Get first answer
+        # first_answer = response.split(":")[-1]
+        # print("*********")
+        # print(f"first answer// {first_answer}")
+        
+        # item = first_answer
+        
+        # print("*********")
+        return response
 
     def identify_item(self, user_query):
         prompt = self.create_prompt(user_query)
@@ -38,7 +48,7 @@ class ItemExtractorNode():
 
 def main(args=None):
     node = ItemExtractorNode()
-    node.user_input_callback("Find the red cup")
+    node.user_input_callback("i'm trying to find a mug")
 
 if __name__ == '__main__':
     main()
