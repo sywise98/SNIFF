@@ -40,7 +40,11 @@ class ItemExtractorNode():
             first_answer.split("2) ")[0]
         
         #Get item
-        removals = ["\n", "the", "a ", "1) ", "1. "]
+        numbered_list = [f"{i}) " for i in range(1, 10)]
+        numbered_list2 = [f"{i}. " for i in range(1, 10)]
+        numbered_list3 = [f"{i}: " for i in range(1, 10)]
+        char_list = ["\n", "the", "a "] 
+        removals = numbered_list + numbered_list2 + numbered_list3 + char_list
         for removal in removals:
             first_answer = first_answer.replace(removal, "")
         
@@ -57,7 +61,7 @@ class ItemExtractorNode():
 
 def main(args=None):
     node = ItemExtractorNode()
-    node.user_input_callback("i'm looking for a green book")
+    node.user_input_callback("i'm looking for a red cup")
 
 if __name__ == '__main__':
     main()
