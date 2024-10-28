@@ -1,8 +1,10 @@
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 import torch
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+import os
+import shutil
 
 class ItemExtractorNode(Node):
     def __init__(self):
@@ -13,9 +15,26 @@ class ItemExtractorNode(Node):
             self.user_input_callback,
             10
         )
+        
+        self.clear_subscription = self.create_subscription(
+            Bool,
+            '/clear_llama_cache',
+            self.llama_cache_callback,
+            10
+        )
         self.publisher = self.create_publisher(String, 'extracted_item', 10)
         self.model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.2-1B")
         self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-1B")
+        
+    def llama_cache_callback(self, msg):
+        #Clear caches
+        cache_dir = os.path.expanduser("~/.cache/huggingface/transformers")
+        if os.path.exists(cache_dir):
+            shutil.rmtree(cache_dir)
+            print("All Hugging Face model caches cleared.")
+        else:
+            print("No Hugging Face cache directory found.")
+    
 
     def user_input_callback(self, msg):
         user_message = msg.data
@@ -26,8 +45,8 @@ class ItemExtractorNode(Node):
         self.publisher.publish(item_msg)
 
     def create_prompt(self, user_query):  
-        return f"What is the item trying to be found in the following sentence: '{user_query}' \nAnswer:"
-
+        return f"What is the name and description of the item trying to be found in the following sentence: '{user_query}' \n respond with (description of item) (item) only Answer: "
+    
     def generate_response(self, prompt):
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
         with torch.no_grad():
@@ -49,8 +68,19 @@ class ItemExtractorNode(Node):
         print("*********")
         print(f"first answer\n {first_answer}")
         
+        if "2. " in first_answer:
+            first_answer = first_answer.split("2. ")[0]
+        if "2) " in first_answer:
+            first_answer = first_answer.split("2) ")[0]
+            
+        print(f" trimed first answer\n {first_answer}")
+        
         #Get item
-        removals = ["\n", "the ","a "]
+        numbered_list = [f"{i}) " for i in range(1, 10)]
+        numbered_list2 = [f"{i}. " for i in range(1, 10)]
+        numbered_list3 = [f"{i}: " for i in range(1, 10)]
+        char_list = ["\n", "the", "a ", "A "] 
+        removals = numbered_list + numbered_list2 + numbered_list3 + char_list
         for removal in removals:
             first_answer = first_answer.replace(removal, "")
         
@@ -58,6 +88,7 @@ class ItemExtractorNode(Node):
         
         print("*********")
         return item
+
 
     def identify_item(self, user_query):
         prompt = self.create_prompt(user_query)

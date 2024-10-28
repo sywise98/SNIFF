@@ -1,11 +1,21 @@
 import torch
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+import os
+import shutil
 
 class ItemExtractorNode():
     def __init__(self):
+        model_name = "meta-llama/Llama-3.2-1B"
         self.model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.2-1B")
         self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-1B")
         
+        #Clear caches
+        # cache_dir = os.path.expanduser("~/.cache/huggingface/transformers")
+        # if os.path.exists(cache_dir):
+        #     shutil.rmtree(cache_dir)
+        #     print("All Hugging Face model caches cleared.")
+        # else:
+        #     print("No Hugging Face cache directory found.")
     
     def user_input_callback(self, msg):
         user_message = msg
@@ -35,15 +45,17 @@ class ItemExtractorNode():
         print(f"first answer\n {first_answer}")
         
         if "2. " in first_answer:
-            first_answer.split("2. ")[0]
+            first_answer = first_answer.split("2. ")[0]
         if "2) " in first_answer:
-            first_answer.split("2) ")[0]
+            first_answer = first_answer.split("2) ")[0]
+            
+        print(f" trimed first answer\n {first_answer}")
         
         #Get item
         numbered_list = [f"{i}) " for i in range(1, 10)]
         numbered_list2 = [f"{i}. " for i in range(1, 10)]
         numbered_list3 = [f"{i}: " for i in range(1, 10)]
-        char_list = ["\n", "the", "a "] 
+        char_list = ["\n", "the", "a ", "A "] 
         removals = numbered_list + numbered_list2 + numbered_list3 + char_list
         for removal in removals:
             first_answer = first_answer.replace(removal, "")
@@ -61,7 +73,7 @@ class ItemExtractorNode():
 
 def main(args=None):
     node = ItemExtractorNode()
-    node.user_input_callback("i'm looking for a red cup")
+    node.user_input_callback("i'm trying to find a green mug")
 
 if __name__ == '__main__':
     main()
