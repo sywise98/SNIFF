@@ -13,7 +13,7 @@ class ItemExtractorNode():
         print(f"The item the user is looking for is: {identified_item}")
         
     def create_prompt(self, user_query):  
-        return f"What is the name and description of the item trying to be found in the following sentence: '{user_query}' \n your answer should be formated this way (description of item) (item) Answer: "
+        return f"What is the name and description of the item trying to be found in the following sentence: '{user_query}' \n respond with (description of item) (item) only Answer: "
 
     def generate_response(self, prompt):
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
@@ -34,8 +34,13 @@ class ItemExtractorNode():
         print("*********")
         print(f"first answer\n {first_answer}")
         
+        if "2. " in first_answer:
+            first_answer.split("2. ")[0]
+        if "2) " in first_answer:
+            first_answer.split("2) ")[0]
+        
         #Get item
-        removals = ["\n", "the", "a "]
+        removals = ["\n", "the", "a ", "1) ", "1. "]
         for removal in removals:
             first_answer = first_answer.replace(removal, "")
         
@@ -52,7 +57,7 @@ class ItemExtractorNode():
 
 def main(args=None):
     node = ItemExtractorNode()
-    node.user_input_callback("i'm trying to find a blue book")
+    node.user_input_callback("i'm looking for a green book")
 
 if __name__ == '__main__':
     main()
