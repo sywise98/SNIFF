@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from std_msgs.msg import Int32MultiArray, String
+from std_msgs.msg import Float32MultiArray, String
 from cv_bridge import CvBridge
 import cv2
 import torch
@@ -25,15 +25,19 @@ class OwlVitNode(Node):
                 10)
         
         self.bbox_publisher = self.create_publisher(
-                Int32MultiArray,
+                Float32MultiArray,
                 'owl_vit/bounding_boxes',
                 10)
-        
+        self.cv_bridge = CvBridge()
+        self.object = [["null"]]
+
         self.processor = OwlViTProcessor.from_pretrained("google/owlvit-base-patch32")
         self.model = OwlViTForObjectDetection.from_pretrained("google/owlvit-base-patch32")
+        
 
     def object_callback(self, msg):
-        self.object = msg.data
+        self.object =[[msg.data]]
+
         self.get_logger().info(f'Searching for {self.object}')
 
     def find_object(self,msg):
@@ -54,8 +58,9 @@ class OwlVitNode(Node):
             print(f"Detected {self.object[0][label]} at location {box}")
 
             #Publish bounding boxes
-            bbox_msg = Int32MultiArray()
-            bbox_msg.data = box
+            box_list = box.tolist()
+            bbox_msg = Float32MultiArray()
+            bbox_msg.data = box_list
             self.bbox_publisher.publish(bbox_msg)
 
 def main(args=None):
