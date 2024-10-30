@@ -41,21 +41,21 @@ model = OwlViTForObjectDetection.from_pretrained("google/owlvit-base-patch32")
 url = "http://images.cocodataset.org/val2017/000000039769.jpg"
 image = Image.open(requests.get(url, stream=True).raw)
 
-# Open Webcam
+# Open Webcamq
 cap = cv2.VideoCapture(0)
 
 # Define the objects you want to detect
 texts = [["glasses","phone","scissors"]]
 
 frame_count = 0
-process_every_n_frames = 30
+process_every_n_frames = 5
 
 while True:
     # Capture frame-by-frame
     ret, frame = cap.read()
 
     # Display the resulting frame
-    cv2.imshow('Camera Feed', frame)
+    #cv2.imshow('Camera Feed', frame)
 
     # Press 'q' to quit
     if cv2.waitKey(1) & 0xFF == ord('q'):
