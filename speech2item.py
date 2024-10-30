@@ -26,23 +26,46 @@ class ItemExtractorNode(Node):
         self.model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.2-1B")
         self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-1B")
         
-    def llama_cache_callback(self, msg):
-        #Clear caches
+        self.loop_count = 0
+      
+    def clear_cahce(self): 
         cache_dir = os.path.expanduser("~/.cache/huggingface/transformers")
         if os.path.exists(cache_dir):
             shutil.rmtree(cache_dir)
             print("All Hugging Face model caches cleared.")
         else:
             print("No Hugging Face cache directory found.")
-    
+             
+    def llama_cache_callback(self, msg):
+        #Clear caches
+        self.clear_cahce()
+        
 
     def user_input_callback(self, msg):
         user_message = msg.data
         identified_item = self.identify_item(user_message)
         print(f"The item the user is looking for is: {identified_item}")
+        
+        if not self.word_count(identified_item) and self.loop_count < 3:
+            self.loop_count += 1
+            self.user_input_callback(msg)
+            
+        if self.loop_count >= 3:
+            self.get_logger().error("Model keeps making sentences clearing cache")
+            self.clear_cahce()
+        
+        self.loop_count = 0
         item_msg = String()
         item_msg.data = identified_item
         self.publisher.publish(item_msg)
+        
+    def word_count(self, item):
+        num_word = len(item.split())
+        
+        if num_word <= 3:
+            return True
+        else:
+            return False
 
     def create_prompt(self, user_query):  
         return f"What is the name and description of the item trying to be found in the following sentence: '{user_query}' \n respond with (description of item) (item) only Answer: "
