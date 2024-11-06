@@ -22,6 +22,7 @@ region_top = 0
 region_bottom = int(2 * FRAME_HEIGHT / 3)
 region_left = int(FRAME_WIDTH / 2)
 region_right = FRAME_WIDTH
+wave = False
 #region_bottom = FRAME_HEIGHT
 #region_left = 0
 
@@ -41,6 +42,7 @@ class HandData(Node):
     
     def __init__(self, top, bottom, left, right, centerX):
         super().__init__("wave")
+        self.get_logger().info("INIT")
         self.top = top
         self.bottom = bottom
         self.left = left
@@ -63,6 +65,8 @@ class HandData(Node):
         
         if abs(self.centerX - self.prevCenterX > 10):
             self.isWaving = True
+            print("WAVE")
+            self.get_logger().info("WAVE")
             self.wave_count += 1
             self.wave_list = np.append(self.wave_list,1.0)
         else:
@@ -71,6 +75,7 @@ class HandData(Node):
         if self.wave_count >= 10:
             if(np.mean(self.wave_list) > .25):
                 print("NAV TO POI") #will replace with navigation procedure
+                self.get_logger().info("ITWORKED")
                 self.waving_pub.publish(True)
                 self.wave_count = 0
                 self.wave_list = [0]
@@ -208,25 +213,27 @@ def main(frame):
 class RosImageSub(Node):
     def __init__(self):
         super().__init__("hand_wave")
+        
         qos_profile = rclpy.qos.QoSProfile(
              reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
              history=rclpy.qos.HistoryPolicy.KEEP_LAST,
              depth=1
          )
-        self.image_sub = self.create_subscription(CompressedImage, "/stereo/left/image_raw/compressed", self.image_callback, qos_profile)
+        self.image_sub = self.create_subscription(CompressedImage, "/stereo/image_rect/compressed", self.image_callback, qos_profile)
+        #self.get_logger().info("INIT")
         self.cv_bridge = CvBridge()
     
     def image_callback(self, msg):
         try:
             cv_image = self.cv_bridge.compressed_imgmsg_to_cv2(msg)
+            #self.get_logger().info("IMAGE")
             main(cv_image)
 
         except Exception as e:
             self.get_logger().error("Error Processing image: {}".format(str(e))) 
 
 def ros_main():
-    rclpy.init()
+    #rclpy.init()
     ros_sub = RosImageSub()
     rclpy.spin(ros_sub)
     ros_sub.destroy_node()
