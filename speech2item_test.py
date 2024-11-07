@@ -5,21 +5,18 @@ import shutil
 import ollama
 
 #https://ollama.com/library/llama3.2
+# https://github.com/ollama/ollama-python
 class ItemExtractorNode():
     def __init__(self):
-        model_name = "meta-llama/Llama-3.2-1B"
-        self.model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.2-1B")
-        self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-1B")
-        
         self.loop_count = 0
         
     def clear_cahce(self): 
         cache_dir = os.path.expanduser("~/.cache/huggingface/transformers")
         if os.path.exists(cache_dir):
             shutil.rmtree(cache_dir)
-            print("All Hugging Face model caches cleared.")
+            print("Model caches cleared.")
         else:
-            print("No Hugging Face cache directory found.")
+            print("Cache directory found.")
             
     def word_count(self, item):
         num_word = len(item.split())
@@ -45,22 +42,22 @@ class ItemExtractorNode():
         self.loop_count = 0
 
     def extract_item(self, response):
-        print("*********")
-        print(f"response \n {response}")
+        # print("*********")
+        # print(f"response \n {response}")
         
         #Get first answer
         first_answer = response
         if "Answer: " in first_answer:
             first_answer = (response.split("\n")[1]).split("Answer: ")[-1]
-        print("*********")
-        print(f"first answer\n {first_answer}")
+        # print("*********")
+        # print(f"first answer\n {first_answer}")
         
         if "2. " in first_answer:
             first_answer = first_answer.split("2. ")[0]
         if "2) " in first_answer:
             first_answer = first_answer.split("2) ")[0]
             
-        print(f" trimed first answer\n {first_answer}")
+        # print(f" trimed first answer\n {first_answer}")
         
         #Get item
         numbered_list = [f"{i}) " for i in range(1, 10)]
@@ -73,11 +70,11 @@ class ItemExtractorNode():
         
         item = first_answer
         
-        print("*********")
+        # print("*********")
         return item
 
     def identify_item(self, user_query):
-        #create
+        #create prompt
         print("check")
         content = f"What is the name and description of the item trying to be found in the following sentence: '{user_query}' respond with only the item" 
         prompt=[
@@ -89,14 +86,14 @@ class ItemExtractorNode():
         
         #generate response
         response = ollama.chat(model='llama3.2', messages=prompt)
-        print(response['message']['content'])
+        response = response['message']['content']
         
-        # item = self.extract_item(response)
-        # return item
+        item = self.extract_item(response)
+        return item
 
 def main(args=None):
     node = ItemExtractorNode()
-    node.user_input_callback("i'm trying to find a green mug")
+    node.user_input_callback("i'm trying to find a shoe")
 
 if __name__ == '__main__':
     main()
