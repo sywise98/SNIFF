@@ -1,10 +1,11 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String, Bool
-import torch
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 import os
 import shutil
+import ollama
+# import torch
+# from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 
 class ItemExtractorNode(Node):
     def __init__(self):
@@ -23,9 +24,6 @@ class ItemExtractorNode(Node):
             10
         )
         self.publisher = self.create_publisher(String, 'extracted_item', 10)
-        self.model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.2-1B")
-        self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-1B")
-        
         self.loop_count = 0
       
     def clear_cahce(self): 
@@ -67,36 +65,22 @@ class ItemExtractorNode(Node):
         else:
             return False
 
-    def create_prompt(self, user_query):  
-        return f"What is the name and description of the item trying to be found in the following sentence: '{user_query}' \n respond with (description of item) (item) only Answer: "
-    
-    def generate_response(self, prompt):
-        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
-        with torch.no_grad():
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=50,
-                temperature=0.7,
-                top_p=0.95,
-                do_sample=True
-            )
-        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-
     def extract_item(self, response):
-        print("*********")
-        print(f"response \n {response}")
+        # print("*********")
+        # print(f"response \n {response}")
         
         #Get first answer
-        first_answer = (response.split("\n")[1]).split("Answer: ")[-1]
-        print("*********")
-        print(f"first answer\n {first_answer}")
+        if "Answer: " in first_answer:
+            first_answer = (response.split("\n")[1]).split("Answer: ")[-1]
+        # print("*********")
+        # print(f"first answer\n {first_answer}")
         
         if "2. " in first_answer:
             first_answer = first_answer.split("2. ")[0]
         if "2) " in first_answer:
             first_answer = first_answer.split("2) ")[0]
             
-        print(f" trimed first answer\n {first_answer}")
+        # print(f" trimed first answer\n {first_answer}")
         
         #Get item
         numbered_list = [f"{i}) " for i in range(1, 10)]
@@ -109,13 +93,25 @@ class ItemExtractorNode(Node):
         
         item = first_answer
         
-        print("*********")
+        # print("*********")
         return item
 
 
     def identify_item(self, user_query):
-        prompt = self.create_prompt(user_query)
-        response = self.generate_response(prompt)
+        #create prompt
+        print("check")
+        content = f"What is the name and description of the item trying to be found in the following sentence: '{user_query}' respond with only the item" 
+        prompt=[
+                    {
+                        'role': 'user',
+                        'content': content,
+                    },
+                 ]
+        
+        #generate response
+        response = ollama.chat(model='llama3.2', messages=prompt)
+        response = response['message']['content']
+        
         item = self.extract_item(response)
         return item
 
