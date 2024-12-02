@@ -1,0 +1,23 @@
+running egg_info
+writing ../build/sniff_offboard/sniff_offboard.egg-info/PKG-INFO
+writing dependency_links to ../build/sniff_offboard/sniff_offboard.egg-info/dependency_links.txt
+writing entry points to ../build/sniff_offboard/sniff_offboard.egg-info/entry_points.txt
+writing requirements to ../build/sniff_offboard/sniff_offboard.egg-info/requires.txt
+writing top-level names to ../build/sniff_offboard/sniff_offboard.egg-info/top_level.txt
+reading manifest file '../build/sniff_offboard/sniff_offboard.egg-info/SOURCES.txt'
+writing manifest file '../build/sniff_offboard/sniff_offboard.egg-info/SOURCES.txt'
+running build
+running build_py
+copying sniff_offboard/nodes/yolo_world_node.py -> /home/sahaj/SNIFF/offboard_compute/build/sniff_offboard/build/lib/sniff_offboard/nodes
+running install
+running install_lib
+copying /home/sahaj/SNIFF/offboard_compute/build/sniff_offboard/build/lib/sniff_offboard/nodes/yolo_world_node.py -> /home/sahaj/SNIFF/offboard_compute/install/sniff_offboard/lib/python3.10/site-packages/sniff_offboard/nodes
+byte-compiling /home/sahaj/SNIFF/offboard_compute/install/sniff_offboard/lib/python3.10/site-packages/sniff_offboard/nodes/yolo_world_node.py to yolo_world_node.cpython-310.pyc
+running install_data
+running install_egg_info
+removing '/home/sahaj/SNIFF/offboard_compute/install/sniff_offboard/lib/python3.10/site-packages/sniff_offboard-0.0.1-py3.10.egg-info' (and everything under it)
+Copying ../build/sniff_offboard/sniff_offboard.egg-info to /home/sahaj/SNIFF/offboard_compute/install/sniff_offboard/lib/python3.10/site-packages/sniff_offboard-0.0.1-py3.10.egg-info
+running install_scripts
+Installing item_extractor_node script to /home/sahaj/SNIFF/offboard_compute/install/sniff_offboard/lib/sniff_offboard
+Installing yolo_world_node script to /home/sahaj/SNIFF/offboard_compute/install/sniff_offboard/lib/sniff_offboard
+writing list of installed files to '/home/sahaj/SNIFF/offboard_compute/build/sniff_offboard/install.log'
