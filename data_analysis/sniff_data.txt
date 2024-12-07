@@ -1,0 +1,21 @@
+Trial,Object,Idle_State,Approach_State,Conversation,Looking_for_Object,Navigate_to_Object,Location
+1, ball, 1, 1, 1, 1, 1, 4
+2, water_bottle, 0, 1, 1, 0, 0, 4
+3, water_bottle, 1, 1, 1, 1, 1, 1
+4, water_bottle, 0, 1, 1, 0, 0, 2
+5, water_bottle, 1, 1, 1, 1, 0, 1
+6, water_bottle, 0, 1, 1, 0, 0, 1
+7, water_bottle, 0, 1, 1, 0, 0, 3
+8, phone, 1, 1, 1, 1, 1, 2
+9, phone, 0, 1, 1, 1, 0, 3
+10, phone, 1, 1, 1, 1, 1, 4
+11, phone, 1, 1, 1, 1, 1, 1
+12, backpack, 1, 1, 1, 1, 0, 3
+13, backpack, 1, 1, 1, 1, 1, 3
+14, backpack, 1, 1, 1, 1, 1, 4
+15, backpack, 1, 1, 1, 1, 1, 2
+16, backpack, 1, 1, 1, 1, 1, 1
+17, bowl, 1, 1, 1, 1, 1, 1
+18, bowl, 1, 1, 1, 1, 1, 2
+19, bowl, 0, 1, 1, 1, 0, 3
+20, bowl, 0, 1, 1, 1, 0, 4

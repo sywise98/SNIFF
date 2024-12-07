@@ -1,1 +1,8 @@
 .env
+*/log
+*/build
+*/install
+
+*/log/*
+*/build/*
+*/install/*

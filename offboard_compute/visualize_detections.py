@@ -2,9 +2,10 @@
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Int32MultiArray, Float32
 import cv2
 import numpy as np
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 class BBoxVisualizerNode(Node):
     def __init__(self):
@@ -15,16 +16,30 @@ class BBoxVisualizerNode(Node):
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
         
-        # Subscribe to bounding box topic
+        qos_profile = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1
+        )
+
+        # Subscribe to bounding box and depth topics
         self.bbox_subscription = self.create_subscription(
             Int32MultiArray,
             'yolo_bboxes',
             self.bbox_callback,
-            10
+            qos_profile
         )
         
-        # Store latest bboxes
+        self.depth_subscription = self.create_subscription(
+            Float32,
+            '/object_depth',
+            self.depth_callback,
+            qos_profile
+        )
+        
+        # Store latest values
         self.current_bboxes = []
+        self.current_depth = None
         
         # Create timer for visualization loop (30 fps)
         self.timer = self.create_timer(1/30.0, self.visualization_callback)
@@ -32,18 +47,22 @@ class BBoxVisualizerNode(Node):
         self.get_logger().info('Visualizer Node initialized')
 
     def bbox_callback(self, msg):
-        # Convert normalized coordinates back to pixel coordinates
         self.current_bboxes = msg.data
+
+    def depth_callback(self, msg):
+        self.current_depth = msg.data
 
     def visualization_callback(self):
         ret, frame = self.cap.read()
         if not ret:
             self.get_logger().warn('Failed to grab frame')
             return
-            
+        
+        height, width = frame.shape[:2]
+        frame = cv2.resize(frame, (width // 2, height // 2))     
         height, width = frame.shape[:2]
         
-        # Draw all current bboxes
+        # Draw all current bboxes with depth
         if self.current_bboxes:
             # Convert normalized coordinates (0-10000) back to pixel coordinates
             x1 = int((self.current_bboxes[0] / 10000.0) * width)
@@ -53,6 +72,31 @@ class BBoxVisualizerNode(Node):
             
             # Draw rectangle
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            
+            # Add depth label if available
+            if self.current_depth is not None:
+                label = f"{self.current_depth:.2f}m"
+                # Get text size for background rectangle
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                font_scale = 0.8
+                thickness = 2
+                (text_width, text_height), _ = cv2.getTextSize(label, font, font_scale, thickness)
+                
+                # Draw background rectangle for text
+                cv2.rectangle(frame, 
+                            (x1, y1 - text_height - 10), 
+                            (x1 + text_width + 10, y1), 
+                            (0, 255, 0), 
+                            -1)
+                
+                # Draw text
+                cv2.putText(frame, 
+                           label, 
+                           (x1 + 5, y1 - 5), 
+                           font, 
+                           font_scale, 
+                           (0, 0, 0), 
+                           thickness)
         
         # Show frame
         cv2.imshow('YOLO Detections', frame)

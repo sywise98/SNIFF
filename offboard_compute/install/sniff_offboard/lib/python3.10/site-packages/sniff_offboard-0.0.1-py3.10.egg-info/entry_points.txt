@@ -1,3 +1,0 @@
-[console_scripts]
-item_extractor_node = sniff_offboard.nodes.item_extractor_node:main
-yolo_world_node = sniff_offboard.nodes.yolo_world_node:main
